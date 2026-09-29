@@ -1,0 +1,9 @@
+services:
+  pricing-sim:
+    build: .
+    container_name: hurba-pricing-sim
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8010:8000"   # solo locale: il reverse proxy espone il servizio
+    volumes:
+      - ./data/scenarios:/srv/data/scenarios

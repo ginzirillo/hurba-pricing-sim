@@ -1,0 +1,368 @@
+# =====================================================================
+# HURBA Pricing Simulator — defaults.yaml
+# UNICA fonte di verità per parametri, formule, tabelle, testi di aiuto.
+# Ogni campo ha: value | label | help | example | unit | group.
+# Il pannello Parametri del frontend si genera leggendo questo file.
+# Le percentuali sono espresse come frazione (0.22 = 22%).
+# =====================================================================
+
+meta:
+  versione: "0.1"
+  anni: [2026, 2027]
+  valuta: "EUR"
+
+# ---------------------------------------------------------------------
+# 1. PARAMETRI SCALARI
+# ---------------------------------------------------------------------
+parametri:
+
+  iva:
+    value: 0.22
+    label: "Aliquota IVA"
+    help: "IVA applicata sul prezzo al pubblico. Netto IVA = listino / (1 + IVA)."
+    example: "Listino 8.990 € con IVA 22% → netto 7.369 €."
+    unit: "%"
+    group: "Fiscale"
+
+  fx_usd_eur:
+    value: 1.15
+    label: "Cambio USD/EUR"
+    help: "Quanti dollari servono per un euro. Il costo FOB in dollari viene diviso per questo valore per ottenere gli euro."
+    example: "FOB 2.250 USD con cambio 1,15 → 1.957 €."
+    unit: "USD per 1 EUR"
+    group: "Costi di acquisto"
+
+  dazio:
+    value: 0.06
+    label: "Dazio doganale"
+    help: "Percentuale di dazio applicata sulla base CIF (FOB in euro + trasporto). L'IVA all'importazione è neutra e non entra nel costo."
+    example: "(1.957 + 280) × 1,06 = 2.371 € landed."
+    unit: "%"
+    group: "Costi di acquisto"
+
+  listino_150s_preset:
+    value: "combo3"
+    label: "Preset listino 150S"
+    help: "Scelta rapida del listino per 150S e 150S LR. 'custom' usa i valori inseriti nella tabella Modelli."
+    example: "combo3 = 4.190 / 5.190 (raccomandato per EICMA)."
+    options: ["base", "combo3", "combo4", "custom"]
+    group: "Listini"
+
+  split_150s_mode:
+    value: "percentuale"
+    label: "Ripartizione 150S: modalità"
+    help: "Come ripartire i volumi del 150S tra la versione 1 batteria e la versione LR (2 batterie). 'percentuale' usa la quota LR qui sotto sul volume totale 150S; 'quantita' usa le unità indicate nella tabella Volumi per le due versioni."
+    example: "500 unità totali con quota LR 55% → 225 1-batt + 275 LR."
+    options: ["percentuale", "quantita"]
+    group: "Volumi"
+
+  pct_150s_lr:
+    value: 0.55
+    label: "Quota 150S LR sul totale 150S"
+    help: "Percentuale del volume totale 150S che si stima venduta nella versione LR (2 batterie). Usata solo se la modalità è 'percentuale'."
+    example: "55% → su 500 unità, 275 sono LR."
+    unit: "%"
+    group: "Volumi"
+
+  agenti_attivi:
+    value: true
+    label: "Considera gli agenti"
+    help: "Se attivo, il costo provvigionale degli agenti (tabella Agenti) viene sottratto nel canale dealer. Se spento, il tool mostra i margini senza agente."
+    example: "Un dealer senza agente agganciato → spegnere o mettere la quota vendite a 0%."
+    group: "Agenti"
+
+  quota_ceduta:
+    value: 0.0
+    label: "Quota ecobonus ceduta"
+    help: "Percentuale del credito ecobonus che HURBA cede a banca/factor invece di recuperarlo in compensazione fiscale (F24, 12–24 mesi). 0% = nessuna cessione."
+    example: "Ecobonus 1.842 €, quota ceduta 50% → 921 € ceduti, 921 € in compensazione."
+    unit: "%"
+    group: "Ecobonus — cessione credito"
+
+  pct_incasso_cessione:
+    value: 1.0
+    label: "% incassata sulla quota ceduta"
+    help: "Quanto la banca paga per ogni euro di credito ceduto. La differenza a 100% è il costo della cessione."
+    example: "80% → su 1.842 € ceduti incasso 1.474 €, costo 368 €."
+    unit: "%"
+    group: "Ecobonus — cessione credito"
+
+  pct_factoring:
+    value: 0.015
+    label: "Costo factoring"
+    help: "Percentuale trattenuta dal factor sulla fattura dealer IVA inclusa, per la dilazione 60/90 gg concessa al dealer (~8,5% annuo)."
+    example: "Fattura dealer 6.000 € + IVA = 7.320 € × 1,5% = 110 €."
+    unit: "%"
+    group: "Factoring"
+
+  quota_factoring:
+    value: 1.0
+    label: "Quota fatture dealer in factoring"
+    help: "Percentuale delle vendite dealer che passa da factoring. 100% = tutte."
+    example: "Se metà dei dealer paga anticipato → 50%."
+    unit: "%"
+    group: "Factoring"
+
+  promo_riduce_base_ecobonus:
+    value: true
+    label: "La promo riduce la base ecobonus"
+    help: "Se attivo, l'ecobonus si calcola sul prezzo scontato dalla promo (trattamento fiscale corretto: l'incentivo è una % del prezzo effettivamente fatturato). Se spento, l'ecobonus resta calcolato sul listino pieno."
+    example: "150S 4.190 € con promo -300 € → base ecobonus 3.890/1,22 = 3.189 € invece di 3.434 €."
+    group: "Promo"
+
+  benchmark_eb_anno:
+    value: 2027
+    label: "Anno ecobonus per confronto concorrenza"
+    help: "Aliquota ecobonus usata nella vista 'con ecobonus' della ladder concorrenza (applicata a tutti i modelli, HURBA e concorrenti)."
+    example: "2027 → 25% flat."
+    options: [2026, 2027]
+    group: "Benchmark"
+
+# ---------------------------------------------------------------------
+# 2. FORMULE (espressioni modificabili, valutate con simpleeval)
+#    Variabili disponibili: vedi help. Una formula non valida → fallback
+#    al default e messaggio di errore.
+# ---------------------------------------------------------------------
+formule:
+
+  netto:
+    expr: "listino_effettivo / (1 + iva)"
+    label: "Netto IVA"
+    help: "Prezzo al pubblico al netto dell'IVA (dopo eventuale promo). Variabili: listino_effettivo, listino_pieno, iva."
+
+  netto_pieno:
+    expr: "listino_pieno / (1 + iva)"
+    label: "Netto IVA a listino pieno"
+    help: "Netto IVA senza promo. Serve come base ecobonus quando la promo non riduce la base."
+
+  landed:
+    expr: "(fob_usd / fx + freight_eur) * (1 + dazio)"
+    label: "Costo landed (€/unità)"
+    help: "Costo del veicolo reso in Italia: FOB convertito in euro + trasporto, più dazio sulla base CIF. Variabili: fob_usd, fx, freight_eur, dazio."
+
+  prezzo_vendita:
+    expr: "netto * (1 - sconto_canale)"
+    label: "Prezzo di vendita HURBA (€/unità, netto IVA)"
+    help: "Quanto incassa HURBA per unità: netto pieno nel canale diretto, netto meno sconto tier nel canale dealer/distributore. Variabili: netto, sconto_canale."
+
+  ecobonus:
+    expr: "aliquota_eb * base_ecobonus"
+    label: "Ecobonus (€/unità)"
+    help: "Credito d'imposta maturato da HURBA per unità venduta. Variabili: aliquota_eb (anno), base_ecobonus (netto o netto_pieno secondo il parametro promo)."
+
+  street_price:
+    expr: "listino_effettivo - ecobonus"
+    label: "Prezzo cliente 'street' (IVA inclusa)"
+    help: "Quanto paga il cliente finale: listino (meno promo) meno ecobonus. L'IVA resta calcolata sull'imponibile pieno."
+
+  costo_cessione:
+    expr: "ecobonus * quota_ceduta * (1 - pct_incasso_cessione)"
+    label: "Costo cessione credito (€/unità)"
+    help: "Perdita per cessione del credito ecobonus. Zero se non si cede nulla o se si incassa il 100%."
+
+  costo_factoring:
+    expr: "pct_factoring * prezzo_vendita * (1 + iva) * quota_factoring * is_dealer"
+    label: "Costo factoring (€/unità)"
+    help: "Costo del factoring sulla fattura dealer IVA inclusa. is_dealer vale 1 nel canale dealer, 0 altrove."
+
+  margine_lordo:
+    expr: "prezzo_vendita - landed"
+    label: "Margine lordo (€/unità)"
+    help: "Prezzo incassato da HURBA meno costo landed."
+
+  margine_fully_loaded:
+    expr: "margine_lordo - costo_cessione - costo_factoring - costo_agenti"
+    label: "Margine fully loaded (€/unità)"
+    help: "Margine lordo meno costi di cessione, factoring e provvigioni agenti. È il margine su cui si valutano i covenant di contribuzione."
+
+# ---------------------------------------------------------------------
+# 3. TABELLE
+# ---------------------------------------------------------------------
+tabelle:
+
+  modelli:
+    label: "Modelli — costi e listini"
+    help: "Un modello per riga. FOB in dollari all-in (batterie incluse come indicato), trasporto in euro per unità, listino IVA inclusa."
+    colonne:
+      id:          {label: "ID", help: "Identificativo tecnico, non modificare."}
+      nome:        {label: "Modello", help: "Nome commerciale."}
+      fob_usd:     {label: "FOB (USD)", help: "Prezzo franco fabbrica Cina, tutto incluso.", example: "200S: 2.250 USD con 2 batterie semi-solide."}
+      freight_eur: {label: "Trasporto (€)", help: "Costo di trasporto marittimo per unità fino all'Italia.", example: "280 € scooter, 140 € 150S 1 batteria."}
+      listino:     {label: "Listino (€ IVA incl.)", help: "Prezzo al pubblico. Per 150S e 150S LR conta solo se il preset è 'custom'."}
+      note:        {label: "Note", help: "Annotazioni libere."}
+    righe:
+      - {id: brezza_50,  nome: "Brezza 50",  fob_usd: 1240, freight_eur: 280, listino: 2999, note: "Fine serie / runout, uscita 2027. 2 batterie incluse."}
+      - {id: brezza_125, nome: "Brezza 125", fob_usd: 1240, freight_eur: 280, listino: 3899, note: "2 batterie incluse."}
+      - {id: s150,       nome: "150S",       fob_usd: 1500, freight_eur: 140, listino: 4190, note: "1 batteria. Dal gennaio 2027."}
+      - {id: s150_lr,    nome: "150S LR",    fob_usd: 2050, freight_eur: 140, listino: 5190, note: "2 batterie (1.500 + 550 USD). Dal gennaio 2027."}
+      - {id: s200,       nome: "200S",       fob_usd: 2250, freight_eur: 280, listino: 7990, note: "DC di serie, focus B2B/flotte."}
+      - {id: s300,       nome: "300S",       fob_usd: 3200, freight_eur: 280, listino: 8990, note: "Batteria fissa."}
+
+  listini_150s:
+    label: "Preset listino 150S"
+    help: "Combinazioni di listino per 150S / 150S LR selezionabili dal parametro 'Preset listino 150S'."
+    colonne:
+      id:      {label: "ID"}
+      nome:    {label: "Preset"}
+      s150:    {label: "150S (€)"}
+      s150_lr: {label: "150S LR (€)"}
+    righe:
+      - {id: base,   nome: "Base (analisi set-2026)", s150: 3949, s150_lr: 4849}
+      - {id: combo3, nome: "Combo 3 (raccomandata)",  s150: 4190, s150_lr: 5190}
+      - {id: combo4, nome: "Combo 4",                 s150: 3949, s150_lr: 5390}
+
+  canali:
+    label: "Canali di vendita"
+    help: "Sconto sul netto IVA riconosciuto al canale. Il canale diretto ha sconto 0. Il distributore è previsto ma con mix 0% in Italia."
+    colonne:
+      id:       {label: "ID"}
+      nome:     {label: "Canale"}
+      sconto:   {label: "Sconto su netto", help: "Frazione del netto IVA lasciata al canale.", example: "Distributore 25% → prezzo HURBA = netto × 0,75."}
+      factoring: {label: "Usa factoring", help: "Se le fatture di questo canale passano da factoring."}
+      agenti:   {label: "Soggetto ad agenti", help: "Se su questo canale si pagano provvigioni agenti."}
+    righe:
+      - {id: diretta,      nome: "Vendita diretta", sconto: 0.00, factoring: false, agenti: false}
+      - {id: dealer,       nome: "Dealer",          sconto: null, factoring: true,  agenti: true}
+      - {id: distributore, nome: "Distributore",    sconto: 0.25, factoring: false, agenti: false}
+
+  tier_dealer:
+    label: "Tier sconto dealer"
+    help: "Livelli di sconto sul netto IVA per i dealer e loro peso sul fatturato dealer. I pesi di ogni anno devono sommare a 100%. Demo: sconto per unità dimostrative, oggi a 0%."
+    colonne:
+      id:       {label: "ID"}
+      nome:     {label: "Tier"}
+      sconto:   {label: "Sconto su netto", example: "17% → netto 7.369 × 0,83 = 6.116 €."}
+      mix_2026: {label: "Peso 2026", help: "Quota del fatturato dealer 2026 a questo tier."}
+      mix_2027: {label: "Peso 2027", help: "Quota del fatturato dealer 2027 a questo tier (cambierà con il Dealer Program)."}
+    righe:
+      - {id: t17,  nome: "Standard 17%", sconto: 0.17, mix_2026: 0.75, mix_2027: 0.75}
+      - {id: t18,  nome: "Tier 18%",     sconto: 0.18, mix_2026: 0.10, mix_2027: 0.10}
+      - {id: t20,  nome: "Tier 20%",     sconto: 0.20, mix_2026: 0.15, mix_2027: 0.15}
+      - {id: demo, nome: "Demo 22%",     sconto: 0.22, mix_2026: 0.00, mix_2027: 0.00}
+
+  mix_canale:
+    label: "Mix canale per anno"
+    help: "Quota delle unità vendute per canale in ciascun anno. Le tre quote devono sommare a 100%."
+    colonne:
+      anno:         {label: "Anno"}
+      diretta:      {label: "Diretta"}
+      dealer:       {label: "Dealer"}
+      distributore: {label: "Distributore"}
+    righe:
+      - {anno: 2026, diretta: 0.50, dealer: 0.50, distributore: 0.00}
+      - {anno: 2027, diretta: 0.40, dealer: 0.60, distributore: 0.00}
+
+  agenti:
+    label: "Categorie di agenti"
+    help: "Ogni riga è una categoria di agente con la propria provvigione, la base su cui si calcola e la quota di vendite dealer su cui interviene. Il costo totale è la somma delle categorie attive."
+    colonne:
+      id:     {label: "ID"}
+      nome:   {label: "Categoria"}
+      attivo: {label: "Attivo"}
+      pct:    {label: "Provvigione", help: "Percentuale riconosciuta all'agente.", example: "3%."}
+      base:   {label: "Base di calcolo", help: "Su cosa si applica la %: 'listino' (IVA incl.), 'netto' (netto IVA), 'prezzo_dealer' (netto meno sconto tier), 'margine' (margine lordo HURBA).", options: ["listino", "netto", "prezzo_dealer", "margine"]}
+      quota:  {label: "Quota vendite dealer con agente", help: "Percentuale delle vendite dealer seguite da questa categoria di agente.", example: "100% = tutte le vendite dealer pagano la provvigione."}
+    righe:
+      - {id: standard, nome: "Agente standard", attivo: true, pct: 0.03, base: "listino", quota: 1.00}
+
+  ecobonus:
+    label: "Ecobonus per anno"
+    help: "Aliquote per anno. Se 'usa mix rottamazione' è attivo, l'aliquota effettiva = senza × (1 − mix) + con × mix; altrimenti si usa l'aliquota flat."
+    colonne:
+      anno:              {label: "Anno"}
+      senza_rottamazione: {label: "Senza rottamazione"}
+      con_rottamazione:  {label: "Con rottamazione"}
+      flat:              {label: "Aliquota flat usata", help: "Aliquota media applicata a tutte le unità quando il mix rottamazione non è attivo."}
+      usa_mix:           {label: "Usa mix rottamazione"}
+      mix_rottamazione:  {label: "% vendite con rottamazione", example: "50% con 30/40 → effettiva 35%."}
+    righe:
+      - {anno: 2026, senza_rottamazione: 0.30, con_rottamazione: 0.40, flat: 0.35, usa_mix: false, mix_rottamazione: 0.50}
+      - {anno: 2027, senza_rottamazione: 0.20, con_rottamazione: 0.30, flat: 0.25, usa_mix: false, mix_rottamazione: 0.50}
+
+  promo:
+    label: "Promozioni"
+    help: "Sconti secchi sul listino per un numero massimo di unità, in un anno. Il tetto unità si ripartisce tra i modelli indicati in proporzione ai loro volumi. Lo sconto è a carico HURBA anche nel canale dealer."
+    colonne:
+      id:      {label: "ID"}
+      nome:    {label: "Nome promo", help: "Nome libero, appare nei report."}
+      attiva:  {label: "Attiva"}
+      anno:    {label: "Anno"}
+      modelli: {label: "Modelli", help: "Lista di ID modello a cui si applica."}
+      tipo:    {label: "Tipo sconto", options: ["euro", "percentuale"], help: "'euro' = importo fisso sul listino; 'percentuale' = % del listino."}
+      valore:  {label: "Valore", example: "300 (euro) oppure 0.07 (7%)."}
+      unita_max: {label: "Tetto unità", help: "Numero massimo di unità che beneficiano della promo."}
+    righe:
+      - {id: eicma, nome: "Promo EICMA", attiva: true, anno: 2027, modelli: [s150, s150_lr], tipo: "euro", valore: 300, unita_max: 150}
+
+  volumi:
+    label: "Volumi per modello e anno (Italia)"
+    help: "Unità vendute per anno. La riga '150S totale' è usata solo in modalità ripartizione 'percentuale'; le righe 150S / 150S LR solo in modalità 'quantita'."
+    colonne:
+      modello: {label: "Modello"}
+      anno:    {label: "Anno"}
+      unita:   {label: "Unità"}
+    righe:
+      - {modello: brezza_50,  anno: 2026, unita: 25}
+      - {modello: brezza_125, anno: 2026, unita: 40}
+      - {modello: s200,       anno: 2026, unita: 190}
+      - {modello: s300,       anno: 2026, unita: 200}
+      - {modello: brezza_125, anno: 2027, unita: 50}
+      - {modello: s150_totale, anno: 2027, unita: 500}
+      - {modello: s150,       anno: 2027, unita: 225}
+      - {modello: s150_lr,    anno: 2027, unita: 275}
+      - {modello: s200,       anno: 2027, unita: 200}
+      - {modello: s300,       anno: 2027, unita: 250}
+
+  benchmark:
+    label: "Concorrenti — listini pieni"
+    help: "Listini IVA inclusa dei concorrenti per la ladder di prezzo. Per i modelli con range si usa il valore indicato."
+    colonne:
+      nome:    {label: "Modello"}
+      listino: {label: "Listino (€)"}
+      note:    {label: "Note"}
+    righe:
+      - {nome: "NIU NQiX 300",       listino: 3599, note: ""}
+      - {nome: "Silence S02",        listino: 3790, note: ""}
+      - {nome: "Silence S01",        listino: 4590, note: ""}
+      - {nome: "NIU NQiX 500 MY26",  listino: 4599, note: ""}
+      - {nome: "Silence S01+",       listino: 5590, note: ""}
+      - {nome: "NIU NQiX 1000",      listino: 6499, note: "Da Q3-26, 125 km/h"}
+      - {nome: "Seat MÓ",            listino: 6750, note: ""}
+      - {nome: "Nerva Exe II",       listino: 7760, note: ""}
+      - {nome: "BMW CE 02",          listino: 8250, note: "Range 7.750–8.750"}
+
+# ---------------------------------------------------------------------
+# 4. COVENANT (soglie di alert)
+# ---------------------------------------------------------------------
+covenant:
+  tier20_max_share:
+    value: 0.15
+    label: "Tier 20%: quota massima del fatturato dealer"
+    help: "Il fatturato realizzato al tier 20% non deve superare questa quota del fatturato dealer totale dell'anno."
+    unit: "%"
+  contribuzione_min:
+    value: 0.25
+    label: "Contribuzione minima per combinazione"
+    help: "Margine fully loaded / prezzo di vendita ≥ soglia su OGNI combinazione modello × canale × tier."
+    unit: "%"
+  costi_finanziari_max:
+    value: 0.17
+    label: "Costi finanziari massimi sul margine lordo"
+    help: "(Costo cessione + costo factoring) / margine lordo dell'anno ≤ soglia."
+    unit: "%"
+
+# ---------------------------------------------------------------------
+# 5. PRESET (sovrascritture parziali applicate sopra i default)
+# ---------------------------------------------------------------------
+preset:
+  validazione_set2026:
+    nome: "Validazione (analisi set-2026)"
+    help: "Ricrea le assunzioni dell'analisi di settembre 2026: EB 25% flat entrambi gli anni, 150S 3.949/4.849, cessione 100% incassata all'80%, nessun agente, nessuna promo. Serve a verificare che il motore replichi i risultati di riferimento."
+    override:
+      parametri.listino_150s_preset.value: "base"
+      parametri.quota_ceduta.value: 1.0
+      parametri.pct_incasso_cessione.value: 0.8
+      parametri.agenti_attivi.value: false
+      tabelle.ecobonus.righe[0].flat: 0.25
+      tabelle.ecobonus.righe[1].flat: 0.25
+      tabelle.promo.righe[0].attiva: false
