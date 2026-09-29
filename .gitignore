@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# scenari salvati (restano sul VPS, non in git)
+data/scenarios/*
+!data/scenarios/.gitkeep
